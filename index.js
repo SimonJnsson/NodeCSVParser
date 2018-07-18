@@ -1,46 +1,50 @@
 // Author: Simon Jønsson
+
 var fs = require('fs');
 
-function Person(firstName, lastName, email, phoneNumber){
-    this.firstName = firstName;
-    this.lastName = lastName;
-    this.email = email;
-    this.phoneNumber = phoneNumber;
-}
+module.exports = {
+    /* Method for reading and parsing CSV file to JSON
+        path: path to csv file
+        encoding: type of encoding in CSV
+        callback: callback method
+        headers: headers to use if none present in CSV, default null
+        seperator: symbol to use for cell seperation, default ','
+        lineDelimiter: string used to indicate new line in CSV, default '\r\n'
+    */
+    parseToJSON: function(path, encoding, callback, headers = null, seperator = ',', lineDelimiter = '\r\n'){
+        fs.readFile(path.toString(), encoding, function (error,data) {
+          // If an error occours when reading file
+          if (error) {
+            // Abort and log the error
+            return console.log(err);
+          }
 
-// Export the function to allow for asynchronous callback
-// Once the file has been loaded and processed the data will be passed
-module.exports = function(callback){
-    fs.readFile('./input.csv', 'utf8', function (error,data) {
-      // If an error occours when reading file
-      if (error) {
-        // Abort and log the error
-        return console.log(err);
-      }
+          // Get data from file and split on newlines
+          var linesInCSV = data.trim().split(lineDelimiter);
 
-      // Get data from file and split on newlines
-      var linesInCSV = data.trim().split('\r\n');
+          // Get headers in file if none supplied
+          if(headers == null){
+              headers = linesInCSV[0].split(seperator);
+              linesInCSV = linesInCSV.slice(1);
+          }
 
-      // Get headers in file
-      var headers = linesInCSV[0];
+          var objects = [];
 
-      // Remove headers from data
-      var linesWithoutHeader = linesInCSV.slice(1);
+          for (var i = 0; i < linesInCSV.length; i++) {
+              var currLine = linesInCSV[i].split(seperator);
+              var currObj = {};
+              for (var j = 0; j < currLine.length; j++) {
+                  currObj[headers[j]] = currLine[j];
+              }
 
-      var Persons = [];
+              objects.push(currObj);
+          }
 
-      linesWithoutHeader.forEach(function(item){
-         // Split the data in each line
-         var personInfo = item.split(',');
-         // Create a new Person object with appropiate data fromt the line and push to Persons array
-         //Persons.push(new Person(personInfo[0], personInfo[1], personInfo[2], personInfo[3]));
-         Persons.push(personInfo);
-      });
+          // Parse the data to JSON
+          jsonData = JSON.stringify(objects);
 
-      // Parse the Persons array to JSON
-      jsonData = JSON.stringify(Persons);
-
-      // Do callback with data and any error
-      callback(error, jsonData);
-    });
+          // Do callback with data and any error
+          callback(error, jsonData);
+        });
+    }
 }
